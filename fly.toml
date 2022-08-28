@@ -6,7 +6,7 @@ kill_timeout = 5
 processes = []
 
 [build]
-  image = "kehvinbehvin/engagement-tracker-nginx:911fe5a"
+  image = "kehvinbehvin/engagement-tracker-nginx:latest"
 
 [env]
 
