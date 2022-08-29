@@ -1,0 +1,64 @@
+- pipeline: "staging-engagement-core"
+  on: "EVENT"
+  events:
+  - type: "PUSH"
+    refs:
+    - "refs/heads/master"
+  priority: "NORMAL"
+  fail_on_prepare_env_warning: true
+  variables:
+  - key: "DOCKERTAG"
+    value: "latest"
+    type: "VAR"
+    settable: true
+    description: "Docker tag"
+  - key: "LATESTCOMMITHASH"
+    value: "664bf55"
+    type: "VAR"
+    settable: true
+    description: "LATEST COMMIT HASH"
+  actions:
+  - action: "Execute: export LATESTCOMMITHASH=$(git log --pretty=format:'%h' -n 1)"
+    type: "BUILD"
+    working_directory: "/buddy/engagement-tracker"
+    docker_image_name: "library/ubuntu"
+    docker_image_tag: "18.04"
+    execute_commands:
+    - "export LATESTCOMMITHASH=$(cat .git/ORIG_HEAD | head -c 7)"
+    volume_mappings:
+    - "/:/buddy/engagement-tracker"
+    cache_base_image: true
+    shell: "BASH"
+  - action: "Build Docker image"
+    type: "DOCKERFILE"
+    dockerfile_path: "Dockerfile"
+    target_platform: "linux/amd64"
+  - action: "Push Docker image"
+    type: "DOCKER_PUSH"
+    docker_image_tag: "latest,$LATESTCOMMITHASH"
+    repository: "kehvinbehvin/engagement-tracker"
+    integration_hash: "3qM15wNJAPdRkJwVeGyOXpZKnW"
+  - action: "Build application"
+    type: "NATIVE_BUILD_LINUX"
+    working_directory: "/home/ubuntu/build"
+    distribution: "UBUNTU_20_04"
+    commands:
+    - "curl -L https://fly.io/install.sh | sh"
+    - "/home/ubuntu/.fly/bin/flyctl deploy --app engagement-core -t $FLYCTL_ACCESS_TOKEN --verbose"
+    shell: "SH"
+    variables:
+    - key: "FLYCTL_ACCESS_TOKEN"
+      value: "secure!JSCYm9TgKQ3efQ1+ShrVenH52gIDcQfupiwYqxb6XgF9IObS47v3u83n1ars5Azg.iQijsxGaFWtbUYhV96BO9A=="
+      type: "VAR"
+      encrypted: true
+    sync_paths:
+    - pipeline_path: "/"
+      vm_path: "/home/ubuntu/build"
+      direction: "PIPELINE_TO_VM"
+      excludes: ""
+      includes: ""
+    - pipeline_path: "/"
+      vm_path: "/home/ubuntu/build"
+      direction: "VM_TO_PIPELINE"
+      excludes: ""
+      includes: ""
